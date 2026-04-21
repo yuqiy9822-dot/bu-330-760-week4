@@ -9,11 +9,10 @@ from calculator import calculate
 load_dotenv()
 
 # Configure your model below. Examples:
-#   "google-gla:gemini-2.5-flash"       (needs GOOGLE_API_KEY)
-#   "openai:gpt-4o-mini"                (needs OPENAI_API_KEY)
+#   "google-gla:gemini-2.5-flash"    (needs GOOGLE_API_KEY)
+#   "openai:gpt-4o-mini"             (needs OPENAI_API_KEY)
 #   "anthropic:claude-sonnet-4-6"    (needs ANTHROPIC_API_KEY)
-MODEL = "google-gla:gemini-2.5-flash"
-
+MODEL = "openai:gpt-4o-mini"
 agent = Agent(
     MODEL,
     system_prompt=(
@@ -26,27 +25,24 @@ agent = Agent(
 
 
 @agent.tool_plain
-def calculator_tool(expression: str) -> str:
-    """Evaluate a math expression and return the result.
+def calculator(expression: str) -> str:
+    """Evaluate an arithmetic expression and return the result as a string."""
+    return str(calculate(expression))
 
-    Examples: "847 * 293", "10000 * (1.07 ** 5)", "23 % 4"
+
+@agent.tool_plain
+def product_lookup(product_name: str) -> str:
+    """Look up the price of a product by name.
+    Use this when a question asks about product prices from the catalog.
     """
-    return calculate(expression)
+    with open("products.json", "r") as f:
+        products = json.load(f)
 
+    for name, price in products.items():
+        if name.lower() == product_name.lower():
+            return str(price)
 
-# TODO: Implement this tool by uncommenting the code below and replacing
-# the ... with your implementation. The tool should:
-#   1. Read products.json using json.load() (json is already imported above)
-#   2. If the product_name is in the catalog, return its price as a string
-#   3. If not found, return the list of available product names so the agent
-#      can try again with the correct name
-#
-# @agent.tool_plain
-# def product_lookup(product_name: str) -> str:
-#     """Look up the price of a product by name.
-#     Use this when a question asks about product prices from the catalog.
-#     """
-#     ...
+    return f"Available products: {', '.join(products.keys())}"
 
 
 def load_questions(path: str = "math_questions.md") -> list[str]:
@@ -59,9 +55,9 @@ def load_questions(path: str = "math_questions.md") -> list[str]:
                 questions.append(line.split(". ", 1)[1])
     return questions
 
-
 def main():
     questions = load_questions()
+
     for i, question in enumerate(questions, 1):
         print(f"## Question {i}")
         print(f"> {question}\n")
@@ -83,7 +79,6 @@ def main():
 
         print(f"\n**Answer:** {result.output}\n")
         print("---\n")
-
 
 if __name__ == "__main__":
     main()
